@@ -1,5 +1,3 @@
-import sys
-
 class AnalizadorLexico:
     def __init__(self, codigo_base):
         self.codigo_base = codigo_base
@@ -187,13 +185,10 @@ class AnalizadorLexico:
     
 #leer archivo
 def main():
-        if len(sys.argv) != 2:
-            print("uso correcto: python analizador_lexico.py <archivo_entrada>")
-            return
-        
-        archivo = sys.argv[1]
         
         try:
+            archivo = input("ingrese el nombre del archivo a analizar: \n")
+            
             #la r del segundo argumento es el modo de apertura 'r' = apertura
             #el tercer argumento es la especificacion codificacion del texto
             with open(archivo, 'r',encoding='utf-8') as f:
