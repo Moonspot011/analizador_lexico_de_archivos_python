@@ -1,4 +1,4 @@
-ESTRUCTURA DEL PROYECTO
+ESTRUCTURA DEL PROYECTO:
 -analizador_lexico_AFD.py
 -archivo_test.py
 
