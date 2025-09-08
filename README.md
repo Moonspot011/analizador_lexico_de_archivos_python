@@ -2,7 +2,7 @@ ESTRUCTURA DEL PROYECTO:
 -analizador_lexico_AFD.py
 -archivo_test.py
 
-EXPLICACIÓN
+EXPLICACIÓN:
 Este proyecto implementa un analizador léxico en Python basado en un Autómata Finito Determinista (AFD) explícito.
 El analizador recorre el código fuente de entrada, reconoce tokens válidos del lenguaje (identificadores, palabras reservadas, números, cadenas, operadores, símbolos, etc.), 
 y detecta errores léxicos.
@@ -48,7 +48,7 @@ CARACTERISTICAS:
   *Cadenas sin cerrar.
 
 
-COMO EJECUTAR ?
+COMO EJECUTAR ?:
 En la terminal debes ingresar lo siguiente, dependiendo la version de python que tengas:
 
 >python analizador_lexico_AFD.py
