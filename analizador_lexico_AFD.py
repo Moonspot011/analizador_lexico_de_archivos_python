@@ -56,24 +56,10 @@ class AnalizadorLexicoAFD:
             ("q0", "operador"): ("q0", "check_operador"),
             ("q0", "otro"): ("qERR", "error"),
             ("q0", "EOF"): ("q0", "final"),
-
-            # Estado qCAD (cadena)
-            ("qCAD", "comilla"): ("q0", "emit_string"),  # cerrar cadena
-            ("qCAD", "nueva_linea"): ("qERR", "error"),  # error si salto dentro
-            ("qCAD", "EOF"): ("qERR", "error"),          # error si fin antes de cierre
-            # cualquier otro char en cadena sigue siendo parte del string
-            ("qCAD", "letra"): ("qCAD", "add_char"),
-            ("qCAD", "digito"): ("qCAD", "add_char"),
-            ("qCAD", "signo"): ("qCAD", "add_char"),
-            ("qCAD", "comentario"): ("qCAD", "add_char"),
-            ("qCAD", "espacio"): ("qCAD", "add_char"),
-            ("qCAD", "operador"): ("qCAD", "add_char"),
-            ("qCAD", "otro"): ("qCAD", "add_char"),
-
             # Estado qCOM (comentario hasta fin de línea)
-            ("qCOM", "nueva_linea"): ("q0", "skip"),   # termina comentario
-            ("qCOM", "EOF"): ("q0", "skip"),           # comentario al final del archivo
-            # cualquier otro carácter dentro del comentario simplemente se ignora
+            ("qCOM", "nueva_linea"): ("q0", "skip"),
+            ("qCOM", "EOF"): ("q0", "skip"),    
+            # cualquier otro carácter dentro del comentario se ignora
             ("qCOM", "letra"): ("qCOM", "skip"),
             ("qCOM", "digito"): ("qCOM", "skip"),
             ("qCOM", "signo"): ("qCOM", "skip"),
