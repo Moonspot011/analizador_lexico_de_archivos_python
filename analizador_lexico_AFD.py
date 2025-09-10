@@ -13,8 +13,19 @@ class AnalizadorLexicoAFD:
             'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
             'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is',
             'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return',
-            'try', 'while', 'with', 'yield', 'object', 'bool', 'str', 'int'
-        ] 
+            'try', 'while', 'with', 'yield',
+            'int', 'float', 'str', 'bool', 'list', 'dict', 'set', 'tuple', 'object',
+            'abs', 'all', 'any', 'ascii', 'bin', 'breakpoint', 'callable',
+            'chr', 'classmethod', 'compile', 'complex', 'delattr', 'dir',
+            'divmod', 'enumerate', 'eval', 'exec', 'filter', 'format',
+            'frozenset', 'getattr', 'globals', 'hasattr', 'hash', 'help',
+            'hex', 'id', 'input', 'isinstance', 'issubclass', 'iter', 'len',
+            'locals', 'map', 'max', 'memoryview', 'min', 'next', 'object',
+            'oct', 'open', 'ord', 'pow', 'print', 'property', 'range',
+            'repr', 'reversed', 'round', 'setattr', 'slice', 'sorted',
+            'staticmethod', 'sum', 'super', 'type', 'vars', 'zip', '__import__',
+            'self'
+        ]
         #mapeo de operaciones y simbolos con sus respectivos tokens
         self.operadores = {
             '(': 'tk_par_izq',
@@ -49,7 +60,6 @@ class AnalizadorLexicoAFD:
             # estado q0
             ("q0", "letra"): ("qID", "iniciar_lexema"),
             ("q0", "digito"): ("qNUM", "iniciar_numero"),
-            ("q0", "signo"): ("qNUM", "signo_o_operador"),
             ("q0", "comilla"): ("qCAD", "iniciar_string"),
             ("q0", "comentario"): ("qCOM", "skip_comentario"),
             ("q0", "espacio"): ("q0", "skip"),
@@ -60,7 +70,6 @@ class AnalizadorLexicoAFD:
             # estado qID
             ("qID", "letra"): ("qID", "iniciar_lexema"),
             ("qID", "digito"): ("qNUM", "iniciar_numero"),
-            ("qID", "signo"): ("qNUM", "signo_o_operador"),
             ("qID", "comilla"): ("qCAD", "iniciar_string"),
             ("qID", "comentario"): ("qCOM", "skip_comentario"),
             ("qID", "espacio"): ("q0", "skip"),
@@ -71,7 +80,6 @@ class AnalizadorLexicoAFD:
             # estado qNUM
             ("qNUM", "letra"): ("qID", "iniciar_lexema"),
             ("qNUM", "digito"): ("qNUM", "iniciar_numero"),
-            ("qNUM", "signo"): ("qNUM", "signo_o_operador"),
             ("qNUM", "comilla"): ("qCAD", "iniciar_string"),
             ("qNUM", "comentario"): ("qCOM", "skip_comentario"),
             ("qNUM", "espacio"): ("q0", "skip"),
@@ -82,7 +90,6 @@ class AnalizadorLexicoAFD:
             # estado qCAD
             ("qCAD", "letra"): ("qID", "iniciar_lexema"),
             ("qCAD", "digito"): ("qNUM", "iniciar_numero"),
-            ("qCAD", "signo"): ("qNUM", "signo_o_operador"),
             ("qCAD", "comilla"): ("qCAD", "iniciar_string"),
             ("qCAD", "comentario"): ("qCOM", "skip_comentario"),
             ("qCAD", "espacio"): ("q0", "skip"),
@@ -93,7 +100,6 @@ class AnalizadorLexicoAFD:
             # estado qCOM
             ("qCOM", "letra"): ("qID", "iniciar_lexema"),
             ("qCOM", "digito"): ("qNUM", "iniciar_numero"),
-            ("qCOM", "signo"): ("qNUM", "signo_o_operador"),
             ("qCOM", "comilla"): ("qCAD", "iniciar_string"),
             ("qCOM", "comentario"): ("qCOM", "skip_comentario"),
             ("qCOM", "espacio"): ("q0", "skip"),
@@ -104,7 +110,6 @@ class AnalizadorLexicoAFD:
             # estado q OP
             ("qOP", "letra"): ("qID", "iniciar_lexema"),
             ("qOP", "digito"): ("qNUM", "iniciar_numero"),
-            ("qOP", "signo"): ("qNUM", "signo_o_operador"),
             ("qOP", "comilla"): ("qCAD", "iniciar_string"),
             ("qOP", "comentario"): ("qCOM", "skip_comentario"),
             ("qOP", "espacio"): ("q0", "skip"),
@@ -139,8 +144,6 @@ class AnalizadorLexicoAFD:
             return 'letra'
         if caracter.isdigit():
             return 'digito'
-        if caracter in '+-':
-            return 'signo'
         if caracter in ("'", '"'):
             return 'comilla'
         if caracter in (' ', '\t'):
@@ -175,13 +178,6 @@ class AnalizadorLexicoAFD:
                 self.avance()
             self.tokens.append(f"<tk_entero,{self.lexema},{self.linea_actual},{self.columna_actual - len(self.lexema)}>")
             self.lexema = ""
-        elif accion == "signo_o_operador":
-            if self.mirar(1) and self.mirar(1).isdigit():
-                self.lexema = caracter
-                self.avance()
-            else:
-                self.tokens.append(f"<{self.operadores[caracter]},{self.linea_actual},{self.columna_actual}>")
-                self.avance()
         elif accion == "iniciar_string":
             comilla = caracter
             self.avance()
@@ -208,6 +204,15 @@ class AnalizadorLexicoAFD:
             if self.mirar() == '\n':
                 self.avance()
         elif accion == "check_operador":
+            if caracter in '+-':
+                if self.mirar(1) and self.mirar(1).isdigit():
+                    self.lexema = caracter
+                    self.avance()
+                    while self.mirar() and self.mirar().isdigit():
+                        self.lexema += self.mirar()
+                        self.avance()
+                    self.tokens.append(f"<tk_entero,{self.lexema},{self.linea_actual},{self.columna_actual - len(self.lexema)}>")
+                    self.lexema = ""
             dos_operadores = (self.mirar() or '') + (self.mirar(1) or '')
             if dos_operadores in self.operadores:
                 self.tokens.append(f"<{self.operadores[dos_operadores]},{self.linea_actual},{self.columna_actual}>")
