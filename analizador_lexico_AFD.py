@@ -117,25 +117,25 @@ class AnalizadorLexicoAFD:
             ("qOP", "otro"): ("qERR", "error"),
             ("qOP", "EOF"): ("qOP", "final"),
         }
+
+    def analizar(self):
+        estado="q0"
+        while True:
+            caracter=self.mirar()
+            tipo=self.tipo_caracter(caracter)
+            nuevo_estado, accion=self.delta.get((estado, tipo), ("qERR", "error"))
+            print(f'estado={estado} -> nuevo estado={nuevo_estado}\n')
+            estado_resultado=self.ejecutar_accion(accion, caracter)
+            if estado_resultado in ("qERR", "final"):
+                break
+            estado=nuevo_estado
+        return self.tokens, self.errores
     
     def mirar(self, k=0):
         if self.posicion_actual+k<len(self.codigo_base):
             return self.codigo_base[self.posicion_actual+k]
         return None
     
-    def avance(self, n=1):
-        for _ in range(n):
-            if self.posicion_actual>=len(self.codigo_base):
-                return
-            caracter = self.codigo_base[self.posicion_actual]
-            self.posicion_actual+=1
-            
-            if caracter=='\n':
-                self.linea_actual+=1
-                self.columna_actual=1
-            else:
-                self.columna_actual+=1
-            
     def tipo_caracter(self, caracter):
         if caracter is None:
             return 'EOF'
@@ -151,40 +151,50 @@ class AnalizadorLexicoAFD:
             return 'nueva_linea'
         if caracter=='#':
             return 'comentario'
-        if caracter in self.operadores or caracter =='!':
+        if caracter in self.operadores or caracter=='!':
             return 'operador'
         return 'otro'
-        
+    
+    def avance(self, n=1):
+        for _ in range(n):
+            if self.posicion_actual>=len(self.codigo_base):
+                return
+            caracter = self.codigo_base[self.posicion_actual]
+            self.posicion_actual+=1 
+            if caracter=='\n':
+                self.linea_actual+=1
+                self.columna_actual=1
+            else:
+                self.columna_actual+=1
+                
     def ejecutar_accion(self, accion, caracter):
         if accion=="iniciar_lexema":
             self.lexema=caracter
-            self.avance()
-           
+            self.avance()          
             while self.tipo_caracter(self.mirar()) in ('letra', 'digito'):
                 self.lexema+=self.mirar()
-                self.avance()
-            
+                self.avance()            
             if self.lexema in self.keywords:
-                self.tokens.append(f"<{self.lexema},{self.linea_actual},{self.columna_actual - len(self.lexema)}>")
+                self.tokens.append(f"<{self.lexema},{self.linea_actual},{self.columna_actual-len(self.lexema)}>")
             else:
-                self.tokens.append(f"<id,{self.lexema},{self.linea_actual},{self.columna_actual - len(self.lexema)}>")
+                self.tokens.append(f"<id,{self.lexema},{self.linea_actual},{self.columna_actual-len(self.lexema)}>")
             self.lexema=""
+
         elif accion=="iniciar_numero":
             self.lexema=caracter
             self.avance()
             while self.tipo_caracter(self.mirar())=='digito':
                 self.lexema+=self.mirar()
                 self.avance()
-            self.tokens.append(f"<tk_entero,{self.lexema},{self.linea_actual},{self.columna_actual - len(self.lexema)}>")
+            self.tokens.append(f"<tk_entero,{self.lexema},{self.linea_actual},{self.columna_actual-len(self.lexema)}>")
             self.lexema=""
+
         elif accion=="iniciar_string":
             comilla=caracter
             self.avance()
-
             #ignorar comentarios ''' ''' o """ """
             if self.mirar()==comilla and self.mirar(1)==comilla:
                 self.avance(2)
-
                 while True:
                     char=self.mirar()
                     if char is None:
@@ -195,7 +205,6 @@ class AnalizadorLexicoAFD:
                         break
                     self.avance()
                 return
-
             else:
                 posicion_inicial=self.posicion_actual
                 while True:
@@ -212,20 +221,24 @@ class AnalizadorLexicoAFD:
                         continue
                     if char==comilla:
                         self.lexema=self.codigo_base[posicion_inicial:self.posicion_actual]
-                        self.tokens.append(f"<tk_string,{self.lexema},{self.linea_actual},{self.columna_actual - len(self.lexema) - 1}>")
+                        self.tokens.append(f"<tk_string,{self.lexema},{self.linea_actual},{self.columna_actual-len(self.lexema)-1}>")
                         self.lexema=""
                         self.avance()
                         break
                     self.avance()  
+
         elif accion=="skip":
             self.avance()
+
         elif accion=="nueva_linea":
             self.avance()
+
         elif accion=="skip_comentario":
             while self.mirar() not in (None, '\n'):
                 self.avance()
             if self.mirar()=='\n':
                 self.avance()
+
         elif accion=="check_operador":
             if caracter in '+-':
                 if self.mirar(1) and self.mirar(1).isdigit():
@@ -234,8 +247,9 @@ class AnalizadorLexicoAFD:
                     while self.mirar() and self.mirar().isdigit():
                         self.lexema+=self.mirar()
                         self.avance()
-                    self.tokens.append(f"<tk_entero,{self.lexema},{self.linea_actual},{self.columna_actual - len(self.lexema)}>")
+                    self.tokens.append(f"<tk_entero,{self.lexema},{self.linea_actual},{self.columna_actual-len(self.lexema)}>")
                     self.lexema=""
+                    return
             dos_operadores=(self.mirar() or '')+(self.mirar(1) or '')
             if dos_operadores in self.operadores:
                 self.tokens.append(f"<{self.operadores[dos_operadores]},{self.linea_actual},{self.columna_actual}>")
@@ -246,60 +260,40 @@ class AnalizadorLexicoAFD:
             else:
                 self.errores.append(f">>>error lexico(linea:{self.linea_actual},posicion:{self.columna_actual})")
                 return "qERR"
+            
         elif accion=="error":
             self.errores.append(f">>>error lexico(linea:{self.linea_actual},posicion:{self.columna_actual})")
             return "qERR"
+        
         elif accion=="final":
             return "final" 
     
-    def analizar(self):
-        estado="q0"
-        while True:
-            caracter=self.mirar()
-            tipo=self.tipo_caracter(caracter)
-            nuevo_estado, accion=self.delta.get((estado, tipo), ("qERR", "error"))
-            estado_resultado=self.ejecutar_accion(accion, caracter)
-            if estado_resultado in ("qERR", "final"):
-                break
-            estado=nuevo_estado
-        return self.tokens, self.errores
-    
-#leer archivo
-def main():
-        
-        try:
-            archivo = input("ingrese el nombre del archivo a analizar: \n")
-            
-            #la r del segundo argumento es el modo de apertura 'r' = apertura
-            #el tercer argumento es la especificacion codificacion del texto
-            with open(archivo, 'r',encoding='utf-8') as f:
-                codigo_leido=f.read()
-                
-            analizador=AnalizadorLexicoAFD(codigo_leido)
-            tokens, errores=analizador.analizar()
-            
-            if errores:
-                for token in tokens:
-                    print(token+'\n')
-                print(errores)
-            else:
-                #poner los tokens en el archivo a crear
-                archivo_salida=archivo+'.lex'
-                #'w'=modo escritura
-                with open(archivo_salida, 'w', encoding='utf-8') as f:
-                    for token in tokens:
-                        f.write(token+'\n')
-                        
-                print(f"Analisis lexico completo, resultado en el archivo {archivo_salida}")
-        
-        except FileNotFoundError:
-            print(f"Error: No se pudo encontrar el archivo {archivo}")
-        except Exception as e:
-            print(f"Error inesperado: {str(e)}")
-            
+#leer archivo  
 if __name__=="__main__":
-    main()
-
-
-
-
+    try:
+        archivo=input("ingrese el nombre del archivo a analizar: \n")      
+        #la r del segundo argumento es el modo de apertura, y el tercero la especificacion de codficacion del texto
+        with open(archivo, 'r',encoding='utf-8') as f:
+            codigo_leido=f.read()
+                
+        analizador=AnalizadorLexicoAFD(codigo_leido)
+        tokens, errores=analizador.analizar()
+            
+        if errores:
+            for token in tokens:
+                print(token+'\n')
+            print(errores)
+        else:
+            #poner los tokens en el archivo a crear
+            archivo_salida=archivo+'.lex'
+            #'w'=modo escritura
+            with open(archivo_salida, 'w', encoding='utf-8') as f:
+                for token in tokens:
+                    f.write(token+'\n')
+                        
+            print(f"analisis lexico completo, resultado en el archivo {archivo_salida}")
+        
+    except FileNotFoundError:
+        print(f"Error: no se pudo encontrar el archivo {archivo}")
+    except Exception as e:
+        print(f"Error inesperado: {str(e)}")

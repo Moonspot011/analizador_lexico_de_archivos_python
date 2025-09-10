@@ -16,15 +16,22 @@ class Perro(Animal):
     def sound(self: "Perro") -> str:
         return "Guau!"
 
-mi_mascota: Animal = None
-mi_mascota = Perro()
+mi_mascota: Animal=None
+mi_mascota=Perro()
 mi_mascota.make_noise()  
 
 # Operaciones matemáticas
-x = 10 + 5 * 3
-y = (x - 15) / 2.5
-z = x ** 2 // y
+x=10+(-5)*3 ; y=(x-15)/2.5 ; z=x**2//y
 
 # Comparaciones
-if x > y and y <= z:
+if x>y and y<=z:
     print("Condición cumplida")
+if x!=y:
+    y=x
+
+if x==y:
+    print("'valores iguales'")
+h=64%2
+
+if h>=x or h<=y:
+    print("valo\res")
