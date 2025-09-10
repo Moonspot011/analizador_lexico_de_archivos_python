@@ -44,7 +44,6 @@ class AnalizadorLexicoAFD:
             '/': 'tk_div',
             '%': 'tk_modulo',
             '=': 'tk_asignar',
-            '!': 'tk_exclamacion',
             '==': 'tk_igual',
             '!=': 'tk_distinto',
             '<': 'tk_menor',
@@ -152,7 +151,7 @@ class AnalizadorLexicoAFD:
             return 'nueva_linea'
         if caracter=='#':
             return 'comentario'
-        if caracter in self.operadores:
+        if caracter in self.operadores or caracter =='!':
             return 'operador'
         return 'otro'
         
@@ -198,7 +197,6 @@ class AnalizadorLexicoAFD:
                 return
 
             else:
-                self.avance()
                 posicion_inicial=self.posicion_actual
                 while True:
                     char=self.mirar()
